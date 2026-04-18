@@ -111,7 +111,13 @@ if [ -n "$EXISTING_IMAGE" ]; then
     echo "To use this image in your project:"
     echo "  1. Copy the image ID: $EXISTING_IMAGE"
     echo "  2. Add to your project's .env file: DROPLET_IMAGE=$EXISTING_IMAGE"
-    echo "  3. Run terraform apply to create droplets with this image"
+    echo "  3. Make sure the image is available in your target region"
+    echo "  4. Run terraform apply to create droplets with this image"
+    echo ""
+    echo "⚠️  Note: If you get 'image is no longer available' error:"
+    echo "   - The image might still be processing"
+    echo "   - Check image status: doctl compute image get $EXISTING_IMAGE"
+    echo "   - Wait for it to show as available in your region"
     echo ""
     echo "If you want to rebuild and upload a new image:"
     echo "1. Delete the existing image first:"
@@ -237,10 +243,49 @@ if [ $? -eq 0 ]; then
         echo "  ID: $NEW_IMAGE_ID"
         echo "  Region: $REGION"
         echo ""
+        
+        # Wait for image to be available (optional, but helpful)
+        echo "⏳ Waiting for image to become available in region $REGION..."
+        echo "   (This may take 2-5 minutes. Press Ctrl+C to skip waiting.)"
+        echo ""
+        
+        MAX_WAIT_MINUTES=10
+        WAIT_INTERVAL=30  # seconds
+        MAX_ATTEMPTS=$((MAX_WAIT_MINUTES * 60 / WAIT_INTERVAL))
+        
+        ATTEMPT=1
+        IMAGE_AVAILABLE=false
+        
+        while [ $ATTEMPT -le $MAX_ATTEMPTS ] && [ "$IMAGE_AVAILABLE" = "false" ]; do
+            echo "   Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking image status..."
+            
+            # Check if image exists and get its details
+            IMAGE_INFO=$(doctl compute image get "$NEW_IMAGE_ID" --format "ID,Name,Status" 2>/dev/null || echo "")
+            
+            if echo "$IMAGE_INFO" | grep -q "available" || echo "$IMAGE_INFO" | grep -q "$NEW_IMAGE_ID"; then
+                IMAGE_AVAILABLE=true
+                echo "   ✅ Image is now available!"
+                echo ""
+                echo "$IMAGE_INFO"
+                echo ""
+            else
+                echo "   ⏸️  Image still processing... waiting ${WAIT_INTERVAL}s"
+                sleep $WAIT_INTERVAL
+                ATTEMPT=$((ATTEMPT + 1))
+            fi
+        done
+        
+        if [ "$IMAGE_AVAILABLE" = "false" ]; then
+            echo ""
+            echo "⚠️  Image is still processing after ${MAX_WAIT_MINUTES} minutes."
+            echo "   It may take a bit longer. You can check status manually:"
+            echo "     doctl compute image get $NEW_IMAGE_ID"
+            echo ""
+        fi
     fi
-    echo "Note: It may take a few minutes for the image to be fully processed."
-    echo "You can check status with:"
-    echo "  doctl compute image list --public false | grep \"$IMAGE_NAME\""
+    
+    echo "Note: Even after the image is created, it may take additional time"
+    echo "      to fully replicate and be ready for droplet creation."
     echo ""
 
     # Wait a bit and check status
@@ -286,11 +331,18 @@ if [ $? -eq 0 ]; then
     echo "Next steps:"
     if [ -n "$NEW_IMAGE_ID" ]; then
         echo "  1. Use this image ID in your project: DROPLET_IMAGE=$NEW_IMAGE_ID"
+        echo ""
+        echo "⚠️  Important: The image may take a few minutes to become available in region: $REGION"
+        echo "   You can check status with:"
+        echo "     doctl compute image get $NEW_IMAGE_ID"
+        echo ""
+        echo "   Wait until the image shows the region '$REGION' in the output before creating droplets."
     else
         echo "  1. Check image status: doctl compute image list --public false | grep \"$IMAGE_NAME\""
     fi
     echo "  2. Update your project's .env file with the image ID"
-    echo "  3. Run terraform apply to create droplets"
+    echo "  3. Wait for image to be available in region $REGION"
+    echo "  4. Run terraform apply to create droplets"
     echo ""
 
 else
