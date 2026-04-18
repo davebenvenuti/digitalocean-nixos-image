@@ -1,5 +1,11 @@
 { config, lib, pkgs, ... }:
 
+let
+  # Read SSH public keys from environment variable
+  # Format: one key per line in SSH_PUBLIC_KEYS environment variable
+  sshPublicKeys = builtins.getEnv "SSH_PUBLIC_KEYS";
+  sshKeys = lib.filter (key: key != "") (lib.splitString "\n" sshPublicKeys);
+in
 {
   # Basic system configuration
   system.stateVersion = "24.11";
@@ -50,8 +56,8 @@
   # Security hardening
   security.sudo.wheelNeedsPassword = false;
   
-  # Users - SSH keys will be populated by cloud-init
-  users.users.root.openssh.authorizedKeys.keys = [ ];
+  # Users - SSH keys from environment variable or cloud-init
+  users.users.root.openssh.authorizedKeys.keys = sshKeys;
 
   # Firewall - minimal defaults, can be extended by runtime config
   networking.firewall = {

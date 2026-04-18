@@ -239,6 +239,26 @@ custom-image = nixos-generators.nixosGenerate {
 };
 ```
 
+### Adding SSH Keys to the Image
+
+You can embed SSH public keys in the image by setting the `SSH_PUBLIC_KEYS` environment variable in your `.env` file:
+
+```bash
+# In your .env file
+SSH_PUBLIC_KEYS="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... user@host"
+```
+
+Or add them directly to `configuration.nix`:
+
+```nix
+users.users.root.openssh.authorizedKeys.keys = [
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host"
+  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... user@host"
+];
+```
+
+**Note**: If you don't add SSH keys, you won't be able to SSH into droplets created from the image unless you use the DigitalOcean web console to add keys manually.
+
 ## Troubleshooting
 
 ### rclone Configuration Issues
@@ -297,7 +317,7 @@ env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"
 - Root login is prohibited (password authentication disabled)
 - Firewall allows only SSH by default
 - Regular security updates via NixOS channel
-- Consider adding your SSH keys in `configuration.nix`
+- SSH keys can be added via `SSH_PUBLIC_KEYS` environment variable in `.env`
 
 ## License
 

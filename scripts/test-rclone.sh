@@ -2,10 +2,18 @@
 set -euo pipefail
 
 # Test rclone configuration
-# Assumes direnv has already loaded .env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Load .env file if it exists
+if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    echo "📋 Loading environment from .env"
+    set -a
+    . "$PROJECT_ROOT/.env"
+    set +a
+fi
+
 source "$SCRIPT_DIR/lib.sh"
 
 # Rclone configuration

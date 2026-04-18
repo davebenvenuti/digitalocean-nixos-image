@@ -2,10 +2,18 @@
 set -euo pipefail
 
 # Upload NixOS image to DigitalOcean via rclone
-# Assumes direnv is set up and nix shell has been loaded
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Load .env file if it exists
+if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    echo "📋 Loading environment from .env"
+    set -a
+    . "$PROJECT_ROOT/.env"
+    set +a
+fi
+
 source "$SCRIPT_DIR/lib.sh"
 
 # Rclone configuration
@@ -74,7 +82,9 @@ IMAGE_DESCRIPTION="NixOS base image built on $(date)"
 
 # Check if image already exists
 echo "Checking for existing images..."
-EXISTING_IMAGE=$(doctl compute image list --public false --format "ID,Name" | { grep "$IMAGE_NAME" || true; } | head -1 | awk '{print $1}')
+# Use exact match for image name (not partial match)
+# awk checks if the second field exactly matches IMAGE_NAME
+EXISTING_IMAGE=$(doctl compute image list --public false --format "ID,Name" | awk -v name="$IMAGE_NAME" '$2 == name {print $1; exit}')
 
 if [ -n "$EXISTING_IMAGE" ]; then
     echo "✅ Image '$IMAGE_NAME' already exists (ID: $EXISTING_IMAGE)"
@@ -97,7 +107,11 @@ if [ -n "$EXISTING_IMAGE" ]; then
 
     echo ""
     echo "You can use this existing image for deployment."
-    echo "Then run: make bootstrap"
+    echo ""
+    echo "To use this image in your project:"
+    echo "  1. Copy the image ID: $EXISTING_IMAGE"
+    echo "  2. Add to your project's .env file: DROPLET_IMAGE=$EXISTING_IMAGE"
+    echo "  3. Run terraform apply to create droplets with this image"
     echo ""
     echo "If you want to rebuild and upload a new image:"
     echo "1. Delete the existing image first:"
@@ -199,15 +213,31 @@ echo "  Source URL: $PUBLIC_URL"
 echo ""
 
 echo "This may take 5-10 minutes..."
-if doctl compute image create \
+# Capture the output to get the image ID
+IMAGE_CREATE_OUTPUT=$(doctl compute image create \
     "$IMAGE_NAME" \
     --region "$REGION" \
     --image-description "$IMAGE_DESCRIPTION" \
-    --image-url "$PUBLIC_URL"; then
+    --image-url "$PUBLIC_URL")
 
+if [ $? -eq 0 ]; then
+    # Extract the image ID from the output
+    # The output format is: ID Name Type Distribution Slug Public Min Disk Created
+    # We look for a line that starts with digits (the image ID)
+    NEW_IMAGE_ID=$(echo "$IMAGE_CREATE_OUTPUT" | grep -E '^[0-9]+' | awk '{print $1}')
+    
+    echo ""
+    echo "$IMAGE_CREATE_OUTPUT"
     echo ""
     echo "✅ Image creation started!"
     echo ""
+    if [ -n "$NEW_IMAGE_ID" ]; then
+        echo "📋 New Image Details:"
+        echo "  Name: $IMAGE_NAME"
+        echo "  ID: $NEW_IMAGE_ID"
+        echo "  Region: $REGION"
+        echo ""
+    fi
     echo "Note: It may take a few minutes for the image to be fully processed."
     echo "You can check status with:"
     echo "  doctl compute image list --public false | grep \"$IMAGE_NAME\""
@@ -226,25 +256,41 @@ if doctl compute image create \
     fi
 
     echo ""
-    echo "📝 Your .env file has been automatically updated with:"
-    echo "  NIXOS_IMAGE_NAME=\"$IMAGE_NAME\""
+    echo "📋 Image successfully uploaded to DigitalOcean!"
+    echo ""
+    echo "Image Details:"
+    echo "  Name: $IMAGE_NAME"
+    if [ -n "$NEW_IMAGE_ID" ]; then
+        echo "  ID: $NEW_IMAGE_ID"
+        echo ""
+        echo "💡 Copy this ID to your project's .env file:"
+        echo "  DROPLET_IMAGE=$NEW_IMAGE_ID"
+    fi
     echo ""
 
-    # Update .env file with image name
+    # Update .env file with image name (for future checks)
     if [ -f "$PROJECT_ROOT/.env" ]; then
+        # Update image name
         if grep -q "^NIXOS_IMAGE_NAME=" "$PROJECT_ROOT/.env"; then
             sed -i "s|^NIXOS_IMAGE_NAME=.*|NIXOS_IMAGE_NAME=\"$IMAGE_NAME\"|" "$PROJECT_ROOT/.env"
         else
             echo "NIXOS_IMAGE_NAME=\"$IMAGE_NAME\"" >> "$PROJECT_ROOT/.env"
         fi
-        echo "✅ .env file updated"
+        echo "✅ .env file updated with image name"
     else
         echo "⚠️  .env file not found. Please add to your .env:"
         echo "  NIXOS_IMAGE_NAME=\"$IMAGE_NAME\""
     fi
 
     echo ""
-    echo "Now bootstrap with: make bootstrap"
+    echo "Next steps:"
+    if [ -n "$NEW_IMAGE_ID" ]; then
+        echo "  1. Use this image ID in your project: DROPLET_IMAGE=$NEW_IMAGE_ID"
+    else
+        echo "  1. Check image status: doctl compute image list --public false | grep \"$IMAGE_NAME\""
+    fi
+    echo "  2. Update your project's .env file with the image ID"
+    echo "  3. Run terraform apply to create droplets"
     echo ""
 
 else
