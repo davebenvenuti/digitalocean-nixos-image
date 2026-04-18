@@ -1,0 +1,37 @@
+# Environment files
+.env.local
+.env
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate.backup
+
+# Direnv cache and generated files
+.direnv/
+
+# Nix build artifacts
+result
+result-*
+
+# Backup files
+*.backup
+*.bak
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+*.img
+*.img.gz
+*.img.tar.gz
+*.qcow2
