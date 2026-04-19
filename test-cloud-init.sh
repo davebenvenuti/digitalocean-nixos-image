@@ -69,13 +69,13 @@ echo ""
 
 # Create ISO with cloud-init data
 echo "Creating cloud-init ISO..."
-if command -v genisoimage >/dev/null 2>&1; then
-    genisoimage -output "$ISO_PATH" -volid cidata -joliet -rock "$TEST_DIR/user-data" "$TEST_DIR/meta-data" 2>/dev/null
-elif command -v mkisofs >/dev/null 2>&1; then
+if command -v mkisofs >/dev/null 2>&1; then
     mkisofs -output "$ISO_PATH" -volid cidata -joliet -rock "$TEST_DIR/user-data" "$TEST_DIR/meta-data" 2>/dev/null
+elif command -v genisoimage >/dev/null 2>&1; then
+    genisoimage -output "$ISO_PATH" -volid cidata -joliet -rock "$TEST_DIR/user-data" "$TEST_DIR/meta-data" 2>/dev/null
 else
-    echo "❌ Need genisoimage or mkisofs to create cloud-init ISO"
-    echo "Install with: nix-shell -p cdrtools"
+    echo "❌ Need mkisofs or genisoimage to create cloud-init ISO"
+    echo "The development shell should provide cdrtools (which includes mkisofs)"
     exit 1
 fi
 
