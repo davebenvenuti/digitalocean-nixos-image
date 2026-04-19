@@ -39,13 +39,6 @@
   # Security hardening
   security.sudo.wheelNeedsPassword = false;
 
-  # Firewall - minimal defaults, can be extended by runtime config
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ 22 ]; # SSH only by default
-    allowedUDPPorts = [ ];
-  };
-
   # Time synchronization
   services.timesyncd.enable = true;
 
@@ -68,4 +61,8 @@
   # - Disk setup and auto-resize
   # - Kernel parameters for DigitalOcean
   # - Metadata service integration
+  # - Firewall configuration
+  
+  # Let the DigitalOcean module handle network and firewall
+  # Don't override its defaults
 }
