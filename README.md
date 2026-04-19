@@ -239,25 +239,38 @@ custom-image = nixos-generators.nixosGenerate {
 };
 ```
 
-### Adding SSH Keys to the Image
+### SSH Key Management with Cloud-Init
 
-You can embed SSH public keys in the image by setting the `SSH_PUBLIC_KEYS` environment variable in your `.env` file:
+The image uses **cloud-init** to inject SSH keys from cloud provider metadata. This is the standard way DigitalOcean and other cloud providers handle SSH key injection.
+
+#### For DigitalOcean Droplets:
+1. Add your SSH public key to your DigitalOcean account
+2. Select the key when creating a droplet from this image
+3. Cloud-init will automatically add the key to the root user's `authorized_keys`
+
+#### For Local Testing with QEMU:
+You can test cloud-init locally using the provided test script:
 
 ```bash
-# In your .env file
-SSH_PUBLIC_KEYS="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... user@host"
+# Make sure you have cdrtools installed for ISO creation
+nix-shell -p cdrtools
+
+# Run the test script
+./test-cloud-init.sh
 ```
 
-Or add them directly to `configuration.nix`:
+The test script creates a cloud-init ISO with test SSH keys and boots the image in QEMU.
+
+#### Manual Cloud-Init Configuration:
+If you need to embed SSH keys directly in the image (not recommended for production), you can modify `configuration.nix`:
 
 ```nix
 users.users.root.openssh.authorizedKeys.keys = [
   "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host"
-  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... user@host"
 ];
 ```
 
-**Note**: If you don't add SSH keys, you won't be able to SSH into droplets created from the image unless you use the DigitalOcean web console to add keys manually.
+**Note**: For production use with DigitalOcean, rely on cloud-init and add your keys via the DigitalOcean dashboard.
 
 ## Troubleshooting
 
@@ -317,7 +330,8 @@ env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"
 - Root login is prohibited (password authentication disabled)
 - Firewall allows only SSH by default
 - Regular security updates via NixOS channel
-- SSH keys can be added via `SSH_PUBLIC_KEYS` environment variable in `.env`
+- SSH keys are injected via cloud-init from cloud provider metadata
+- Cloud-init enables automatic SSH key management from DigitalOcean dashboard
 
 ## License
 
