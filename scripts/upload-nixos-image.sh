@@ -259,7 +259,8 @@ if [ $? -eq 0 ]; then
             echo "   Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking image status..."
             
             # Check if image exists and get its status from JSON output
-            IMAGE_STATUS=$(doctl compute image get "$NEW_IMAGE_ID" --output json 2>/dev/null | jq -r '.status' 2>/dev/null || echo "")
+            # Note: doctl compute image get returns an array, so we need [0].status
+            IMAGE_STATUS=$(doctl compute image get "$NEW_IMAGE_ID" --output json 2>/dev/null | jq -r '.[0].status' 2>/dev/null || echo "")
             
             if [ "$IMAGE_STATUS" = "available" ]; then
                 IMAGE_AVAILABLE=true
