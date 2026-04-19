@@ -226,16 +226,22 @@ custom-image = nixos-generators.nixosGenerate {
 };
 ```
 
-### SSH Key Management with Cloud-Init
+### SSH Key Management
 
-The image uses **cloud-init** to inject SSH keys from cloud provider metadata. This is the standard way DigitalOcean and other cloud providers handle SSH key injection.
+The image uses **DigitalOcean's metadata service** to inject SSH keys. This is the standard way DigitalOcean handles SSH key injection for NixOS.
 
 #### For DigitalOcean Droplets:
 1. Add your SSH public key to your DigitalOcean account
 2. Select the key when creating a droplet from this image
-3. Cloud-init will automatically add the key to the root user's `authorized_keys`
+3. The `digitalocean-ssh-keys` systemd service will automatically fetch and add the key to the root user's `authorized_keys`
 
-#### Manual Cloud-Init Configuration:
+#### How it works:
+- The image includes the official NixOS DigitalOcean module
+- On first boot, the `digitalocean-metadata` service fetches metadata from `169.254.169.254`
+- The `digitalocean-ssh-keys` service extracts SSH keys from metadata and adds them to `/root/.ssh/authorized_keys`
+- No cloud-init required - uses native NixOS integration
+
+#### Manual SSH Key Configuration:
 If you need to embed SSH keys directly in the image (not recommended for production), you can modify `configuration.nix`:
 
 ```nix
@@ -244,7 +250,7 @@ users.users.root.openssh.authorizedKeys.keys = [
 ];
 ```
 
-**Note**: For production use with DigitalOcean, rely on cloud-init and add your keys via the DigitalOcean dashboard.
+**Note**: For production use with DigitalOcean, add your keys via the DigitalOcean dashboard.
 
 ## Troubleshooting
 
@@ -304,8 +310,9 @@ env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"
 - Root login is prohibited (password authentication disabled)
 - Firewall allows only SSH by default
 - Regular security updates via NixOS channel
-- SSH keys are injected via cloud-init from cloud provider metadata
-- Cloud-init enables automatic SSH key management from DigitalOcean dashboard
+- SSH keys are injected via DigitalOcean metadata service
+- Uses official NixOS DigitalOcean integration (not cloud-init)
+- Automatic SSH key management from DigitalOcean dashboard
 
 ## License
 

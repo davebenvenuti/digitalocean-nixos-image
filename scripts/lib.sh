@@ -52,14 +52,15 @@ find_nixos_image() {
         digitalocean)
             patterns=("$PROJECT_ROOT/result/"*.qcow2.gz "$PROJECT_ROOT/result/"*.img.tar.gz)
             ;;
+        # Note: raw image support removed - project focuses on DigitalOcean only
         raw)
-            patterns=("$PROJECT_ROOT/result/"*.img "$PROJECT_ROOT/result/"*.raw)
+            log_and_exit "Raw image support has been removed. Use 'digitalocean' image type."
             ;;
         all)
-            patterns=("$PROJECT_ROOT/result/"*.qcow2.gz "$PROJECT_ROOT/result/"*.img.tar.gz "$PROJECT_ROOT/result/"*.img "$PROJECT_ROOT/result/"*.raw)
+            patterns=("$PROJECT_ROOT/result/"*.qcow2.gz "$PROJECT_ROOT/result/"*.img.tar.gz)
             ;;
         *)
-            log_and_exit "Invalid image type: $image_type. Use 'digitalocean', 'raw', or 'all'."
+            log_and_exit "Invalid image type: $image_type. Use 'digitalocean' or 'all'."
             ;;
     esac
     

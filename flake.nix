@@ -1,31 +1,26 @@
 {
   description = "NixOS base image builder for DigitalOcean";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixos-generators = {
-      url = "github:nix-community/nixos-generators";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs, nixos-generators, ... }: {
-    # Build a DigitalOcean image using the base configuration
-    packages.x86_64-linux.digitalocean-image = nixos-generators.nixosGenerate {
-      system = "x86_64-linux";
-      format = "do";
-      modules = [
-        # General-purpose NixOS configuration
+  outputs = { self, nixpkgs, ... }: let
+    system = "x86_64-linux";
+    pkgs = nixpkgs.legacyPackages.${system};
+    config = {
+      imports = [
+        # Official DigitalOcean image module
+        (pkgs.path + "/nixos/modules/virtualisation/digital-ocean-image.nix")
+        # Our custom configuration
         ./configuration.nix
       ];
     };
+  in {
+    # Build a DigitalOcean image using the official NixOS module
+    packages.${system}.digitalocean-image = (pkgs.nixos config).digitalOceanImage;
     
     # Development shell for building and uploading images
-    devShells.x86_64-linux.default = nixpkgs.legacyPackages.x86_64-linux.mkShell {
-      packages = with nixpkgs.legacyPackages.x86_64-linux; [
-        # Image building tools
-        nixos-generators.packages.x86_64-linux.nixos-generate
-        
+    devShells.${system}.default = pkgs.mkShell {
+      packages = with pkgs; [
         # Compression tools
         gzip
         pigz
