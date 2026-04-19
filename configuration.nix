@@ -79,6 +79,7 @@
   
   # Systemd-networkd for cloud-init network configuration
   systemd.network.enable = true;
+  networking.useNetworkd = true;
 
   # Logging
   services.journald.extraConfig = ''
