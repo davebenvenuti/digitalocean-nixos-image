@@ -92,14 +92,4 @@
 
   # Enable Caddy for reverse proxy (but don't configure it yet)
   services.caddy.enable = true;
-  
-  # Enable serial console for debugging
-  # This allows us to see boot messages and cloud-init output in QEMU
-  boot.kernelParams = [ "console=ttyS0,115200n8" ];
-  boot.loader.timeout = 10;
-  systemd.services."serial-getty@ttyS0" = {
-    enable = true;
-    wantedBy = [ "getty.target" ];
-    serviceConfig.Restart = "always";
-  };
 }

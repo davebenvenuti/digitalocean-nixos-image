@@ -5,7 +5,6 @@ A self-contained Nix flake for building and uploading general-purpose NixOS base
 ## Features
 
 - **Build NixOS images** in DigitalOcean (`do`) format
-- **Build raw images** for local testing with QEMU
 - **Upload to any remote** using `rclone` (DigitalOcean Spaces, S3, Google Cloud, etc.)
 - **Self-contained development environment** with all required tools
 - **Direnv integration** for automatic environment setup
@@ -121,18 +120,6 @@ The base NixOS configuration is in `configuration.nix`. This is a general-purpos
 ```bash
 # Build DigitalOcean image
 nix build .#digitalocean-image
-
-# Build raw image for testing
-nix build .#raw-image
-```
-
-### Test Image Locally with QEMU
-```bash
-# Build raw image
-nix build .#raw-image
-
-# Test with QEMU
-qemu-system-x86_64 -m 2048 -drive file=result/nixos.img,format=raw
 ```
 
 ### Upload to DigitalOcean Spaces (via rclone)
@@ -161,7 +148,7 @@ nix build .#digitalocean-image
 - `scripts/upload-nixos-image.sh` - Main upload script (supports rclone to any remote)
   - Automatically finds the newest DigitalOcean image (`*.qcow2.gz`) in `result/` directory
   - Can be overridden with `NIXOS_IMAGE_PATH` environment variable
-  - Only uploads DigitalOcean images, not raw images (use raw images for local testing only)
+  - Only uploads DigitalOcean images
   - **Note**: Assumes direnv has loaded `.env` and nix shell provides required tools
 - `scripts/test-doctl.sh` - Test doctl configuration
 - `scripts/test-rclone.sh` - Test rclone configuration
@@ -187,7 +174,7 @@ The upload script works with any rclone-compatible remote:
 
 The flake provides a development shell with all required tools:
 
-- **Image building**: `nixos-generators`, `qemu`, `parted`
+- **Image building**: `nixos-generators`, `parted`
 - **Cloud tools**: `doctl`, `rclone`
 - **Utilities**: `gzip`, `zstd`, `openssh`
 
@@ -248,19 +235,6 @@ The image uses **cloud-init** to inject SSH keys from cloud provider metadata. T
 2. Select the key when creating a droplet from this image
 3. Cloud-init will automatically add the key to the root user's `authorized_keys`
 
-#### For Local Testing with QEMU:
-You can test cloud-init locally using the provided test script:
-
-```bash
-# Make sure you have cdrtools installed for ISO creation
-nix-shell -p cdrtools
-
-# Run the test script
-./test-cloud-init.sh
-```
-
-The test script creates a cloud-init ISO with test SSH keys and boots the image in QEMU.
-
 #### Manual Cloud-Init Configuration:
 If you need to embed SSH keys directly in the image (not recommended for production), you can modify `configuration.nix`:
 
@@ -319,7 +293,7 @@ env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"
 ## Best Practices
 
 1. **Use version control**: Commit your `configuration.nix` changes
-2. **Test locally**: Use raw images with QEMU before uploading
+2. **Test in staging**: Create a test droplet in DigitalOcean before production use
 3. **Tag images**: Use descriptive tags for organization
 4. **Monitor costs**: Large images incur storage costs
 5. **Clean up**: Remove old images from your remote storage

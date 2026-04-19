@@ -11,24 +11,13 @@
 
   outputs = { self, nixpkgs, nixos-generators, ... }: {
     # Build a DigitalOcean image using the base configuration
-    packages.x86_64-linux = {
-      digitalocean-image = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        format = "do";
-        modules = [
-          # General-purpose NixOS configuration
-          ./configuration.nix
-        ];
-      };
-      
-      # Also provide a raw image format for testing
-      raw-image = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        format = "raw";
-        modules = [
-          ./configuration.nix
-        ];
-      };
+    packages.x86_64-linux.digitalocean-image = nixos-generators.nixosGenerate {
+      system = "x86_64-linux";
+      format = "do";
+      modules = [
+        # General-purpose NixOS configuration
+        ./configuration.nix
+      ];
     };
     
     # Development shell for building and uploading images
@@ -46,13 +35,6 @@
         parted
         util-linux
         
-        # QEMU for testing
-        qemu
-        qemu_kvm
-        
-        # Cloud-init testing tools
-        cdrtools  # for genisoimage to create cloud-init ISOs
-        
         # SSH tools
         openssh
         
@@ -68,16 +50,10 @@
         echo ""
         echo "Available commands:"
         echo "  nix build .#digitalocean-image   - Build DigitalOcean image"
-        echo "  nix build .#raw-image            - Build raw image for testing"
         echo "  ./scripts/upload-nixos-image.sh  - Upload image to DigitalOcean"
-        echo ""
-        echo "To test with QEMU:"
-        echo "  nix build .#raw-image"
-        echo "  qemu-system-x86_64 -m 2048 -drive file=result/nixos.img,format=raw"
         echo ""
         echo "Images will be available at:"
         echo "  DigitalOcean: result/nixos-image-digital-ocean-*.qcow2.gz"
-        echo "  Raw: result/nixos.img"
         echo ""
         echo "This is a general-purpose NixOS base image."
         echo "Configure environment variables in .env file."
