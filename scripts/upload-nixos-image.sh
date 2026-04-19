@@ -33,7 +33,6 @@ if [ $? -ne 0 ] || [ -z "$IMAGE_PATH" ] || [ ! -f "$IMAGE_PATH" ]; then
     echo "  nix build .#digitalocean-image"
     echo ""
     echo "Note: Only DigitalOcean images (.qcow2.gz) can be uploaded."
-    echo "      Raw images (.img) are for local testing only."
     echo ""
     echo "You can also specify an image with NIXOS_IMAGE_PATH environment variable:"
     echo "  export NIXOS_IMAGE_PATH="/path/to/image.qcow2.gz""

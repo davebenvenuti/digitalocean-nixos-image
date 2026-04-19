@@ -1,11 +1,4 @@
 { config, lib, pkgs, ... }:
-
-let
-  # Read SSH public keys from environment variable
-  # Format: one key per line in SSH_PUBLIC_KEYS environment variable
-  sshPublicKeys = builtins.getEnv "SSH_PUBLIC_KEYS";
-  sshKeys = lib.filter (key: key != "") (lib.splitString "\n" sshPublicKeys);
-in
 {
   # Basic system configuration
   system.stateVersion = "24.11";
@@ -43,28 +36,8 @@ in
     options = "--delete-older-than 30d";
   };
 
-  # SSH configuration
-  services.openssh = {
-    enable = true;
-    settings = {
-      PermitRootLogin = "prohibit-password";
-      PasswordAuthentication = false;
-      KbdInteractiveAuthentication = false;
-    };
-  };
-
   # Security hardening
   security.sudo.wheelNeedsPassword = false;
-  
-  # Users - SSH keys from environment variable or cloud-init
-  users.users.root.openssh.authorizedKeys.keys = sshKeys;
-
-  # Firewall - minimal defaults, can be extended by runtime config
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ 22 ]; # SSH only by default
-    allowedUDPPorts = [ ];
-  };
 
   # Time synchronization
   services.timesyncd.enable = true;
@@ -80,4 +53,20 @@ in
 
   # Enable Caddy for reverse proxy (but don't configure it yet)
   services.caddy.enable = true;
+
+  # Note: The DigitalOcean image module provides:
+  # - SSH configuration (services.openssh) with PasswordAuthentication=false
+  # - SSH key injection from DigitalOcean metadata (digitalocean-ssh-keys service)
+  # - Network configuration for DigitalOcean
+  # - Disk setup and auto-resize
+  # - Kernel parameters optimized for DigitalOcean
+  # - Metadata service integration (digitalocean-metadata service)
+  # - Firewall configuration
+  
+  # Following blog post: https://justinas.org/nixos-in-the-cloud-step-by-step-part-1
+  # "The custom image we just generated has a hidden superpower: it automatically 
+  # pulls in the public SSH keys from your DigitalOcean account at creation time."
+  # 
+  # This is handled by the digitalocean-ssh-keys systemd service which reads
+  # SSH keys from DigitalOcean metadata service at 169.254.169.254
 }

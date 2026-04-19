@@ -35,3 +35,6 @@ Thumbs.db
 *.img.gz
 *.img.tar.gz
 *.qcow2
+
+# Test directories
+test-cloud-init/

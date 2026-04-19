@@ -5,7 +5,6 @@ A self-contained Nix flake for building and uploading general-purpose NixOS base
 ## Features
 
 - **Build NixOS images** in DigitalOcean (`do`) format
-- **Build raw images** for local testing with QEMU
 - **Upload to any remote** using `rclone` (DigitalOcean Spaces, S3, Google Cloud, etc.)
 - **Self-contained development environment** with all required tools
 - **Direnv integration** for automatic environment setup
@@ -121,18 +120,6 @@ The base NixOS configuration is in `configuration.nix`. This is a general-purpos
 ```bash
 # Build DigitalOcean image
 nix build .#digitalocean-image
-
-# Build raw image for testing
-nix build .#raw-image
-```
-
-### Test Image Locally with QEMU
-```bash
-# Build raw image
-nix build .#raw-image
-
-# Test with QEMU
-qemu-system-x86_64 -m 2048 -drive file=result/nixos.img,format=raw
 ```
 
 ### Upload to DigitalOcean Spaces (via rclone)
@@ -161,7 +148,7 @@ nix build .#digitalocean-image
 - `scripts/upload-nixos-image.sh` - Main upload script (supports rclone to any remote)
   - Automatically finds the newest DigitalOcean image (`*.qcow2.gz`) in `result/` directory
   - Can be overridden with `NIXOS_IMAGE_PATH` environment variable
-  - Only uploads DigitalOcean images, not raw images (use raw images for local testing only)
+  - Only uploads DigitalOcean images
   - **Note**: Assumes direnv has loaded `.env` and nix shell provides required tools
 - `scripts/test-doctl.sh` - Test doctl configuration
 - `scripts/test-rclone.sh` - Test rclone configuration
@@ -187,7 +174,7 @@ The upload script works with any rclone-compatible remote:
 
 The flake provides a development shell with all required tools:
 
-- **Image building**: `nixos-generators`, `qemu`, `parted`
+- **Image building**: `nixos-generators`, `parted`
 - **Cloud tools**: `doctl`, `rclone`
 - **Utilities**: `gzip`, `zstd`, `openssh`
 
@@ -239,25 +226,31 @@ custom-image = nixos-generators.nixosGenerate {
 };
 ```
 
-### Adding SSH Keys to the Image
+### SSH Key Management
 
-You can embed SSH public keys in the image by setting the `SSH_PUBLIC_KEYS` environment variable in your `.env` file:
+The image uses **DigitalOcean's metadata service** to inject SSH keys. This is the standard way DigitalOcean handles SSH key injection for NixOS.
 
-```bash
-# In your .env file
-SSH_PUBLIC_KEYS="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... user@host"
-```
+#### For DigitalOcean Droplets:
+1. Add your SSH public key to your DigitalOcean account
+2. Select the key when creating a droplet from this image
+3. The `digitalocean-ssh-keys` systemd service will automatically fetch and add the key to the root user's `authorized_keys`
 
-Or add them directly to `configuration.nix`:
+#### How it works:
+- The image includes the official NixOS DigitalOcean module
+- On first boot, the `digitalocean-metadata` service fetches metadata from `169.254.169.254`
+- The `digitalocean-ssh-keys` service extracts SSH keys from metadata and adds them to `/root/.ssh/authorized_keys`
+- No cloud-init required - uses native NixOS integration
+
+#### Manual SSH Key Configuration:
+If you need to embed SSH keys directly in the image (not recommended for production), you can modify `configuration.nix`:
 
 ```nix
 users.users.root.openssh.authorizedKeys.keys = [
   "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host"
-  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... user@host"
 ];
 ```
 
-**Note**: If you don't add SSH keys, you won't be able to SSH into droplets created from the image unless you use the DigitalOcean web console to add keys manually.
+**Note**: For production use with DigitalOcean, add your keys via the DigitalOcean dashboard.
 
 ## Troubleshooting
 
@@ -306,7 +299,7 @@ env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"
 ## Best Practices
 
 1. **Use version control**: Commit your `configuration.nix` changes
-2. **Test locally**: Use raw images with QEMU before uploading
+2. **Test in staging**: Create a test droplet in DigitalOcean before production use
 3. **Tag images**: Use descriptive tags for organization
 4. **Monitor costs**: Large images incur storage costs
 5. **Clean up**: Remove old images from your remote storage
@@ -317,7 +310,9 @@ env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"
 - Root login is prohibited (password authentication disabled)
 - Firewall allows only SSH by default
 - Regular security updates via NixOS channel
-- SSH keys can be added via `SSH_PUBLIC_KEYS` environment variable in `.env`
+- SSH keys are injected via DigitalOcean metadata service
+- Uses official NixOS DigitalOcean integration (not cloud-init)
+- Automatic SSH key management from DigitalOcean dashboard
 
 ## License
 
