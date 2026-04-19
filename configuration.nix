@@ -51,8 +51,10 @@
   # Cloud-init for SSH key injection from cloud providers
   services.cloud-init = {
     enable = true;
-    # DigitalOcean uses the NoCloud datasource via metadata service
-    # The datasource should auto-detect, but we can help it
+    # Allow cloud-init to configure network (needed for metadata access)
+    network.enable = true;
+    # DigitalOcean uses its own datasource via metadata service
+    # NoCloud datasource is for local/ISO-based metadata (testing)
     settings = {
       datasource_list = [ "NoCloud" "DigitalOcean" "ConfigDrive" ];
     };
@@ -74,6 +76,9 @@
 
   # Time synchronization
   services.timesyncd.enable = true;
+  
+  # Systemd-networkd for cloud-init network configuration
+  systemd.network.enable = true;
 
   # Logging
   services.journald.extraConfig = ''
