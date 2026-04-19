@@ -42,6 +42,9 @@
         
         # Cloud storage for image upload
         rclone
+        
+        # JSON parsing for script
+        jq
       ];
       
       shellHook = ''

@@ -258,14 +258,15 @@ if [ $? -eq 0 ]; then
         while [ $ATTEMPT -le $MAX_ATTEMPTS ] && [ "$IMAGE_AVAILABLE" = "false" ]; do
             echo "   Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking image status..."
             
-            # Check if image exists and get its details
-            IMAGE_INFO=$(doctl compute image get "$NEW_IMAGE_ID" --format "ID,Name,Status" 2>/dev/null || echo "")
+            # Check if image exists and get its status from JSON output
+            IMAGE_STATUS=$(doctl compute image get "$NEW_IMAGE_ID" --output json 2>/dev/null | jq -r '.status' 2>/dev/null || echo "")
             
-            if echo "$IMAGE_INFO" | grep -q "available" || echo "$IMAGE_INFO" | grep -q "$NEW_IMAGE_ID"; then
+            if [ "$IMAGE_STATUS" = "available" ]; then
                 IMAGE_AVAILABLE=true
                 echo "   ✅ Image is now available!"
                 echo ""
-                echo "$IMAGE_INFO"
+                # Show image details
+                doctl compute image get "$NEW_IMAGE_ID" --format "ID,Name,Type,Distribution,MinDisk" 2>/dev/null || echo "Could not get image details"
                 echo ""
             else
                 echo "   ⏸️  Image still processing... waiting ${WAIT_INTERVAL}s"
@@ -291,11 +292,12 @@ if [ $? -eq 0 ]; then
     echo "Waiting 30 seconds, then checking status..."
     sleep 30
 
-    IMAGE_STATUS=$(doctl compute image list --public false | grep "$IMAGE_NAME" | awk '{print $4}')
+    # Check image status using JSON output
+    IMAGE_STATUS=$(doctl compute image list --public false --output json 2>/dev/null | jq -r ".[] | select(.name == \"$IMAGE_NAME\") | .status" 2>/dev/null || echo "")
     if [ "$IMAGE_STATUS" = "available" ]; then
         echo "✅ Image is ready for deployment!"
     else
-        echo "⚠️  Image status: $IMAGE_STATUS"
+        echo "⚠️  Image status: $IMAGE_STATUS (or not found)"
         echo "   It may still be processing. Check again in a few minutes."
     fi
 
