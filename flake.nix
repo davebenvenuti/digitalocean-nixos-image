@@ -50,6 +50,9 @@
         qemu
         qemu_kvm
         
+        # Cloud-init testing tools
+        cdrtools  # for genisoimage to create cloud-init ISOs
+        
         # SSH tools
         openssh
         
