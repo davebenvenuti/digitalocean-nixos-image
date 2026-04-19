@@ -7,10 +7,10 @@
 - ✓ Include instructions for using the private key to SSH
 
 ## 🔄 2. Fix cloud-init configuration issue before testing
-- Verify cloud-init datasource configuration
-- Ensure proper DigitalOcean datasource setup
-- Test locally with QEMU first
-- Iterate until confident cloud-init works locally
+- ✓ Enable cloud-init network configuration
+- ✓ Fix networkd/DHCP conflict
+- ✗ Test shows SSH keys not being injected
+- Need to debug cloud-init NoCloud datasource setup
 
 ## 🔄 3. Research proper DigitalOcean cloud-init configuration for NixOS
 - Find correct datasource configuration for DigitalOcean
