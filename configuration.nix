@@ -1,12 +1,7 @@
 { config, lib, pkgs, ... }:
-
-let
-  # Read SSH public keys from environment variable
-  # Format: one key per line in SSH_PUBLIC_KEYS environment variable
-  sshPublicKeys = builtins.getEnv "SSH_PUBLIC_KEYS";
-  sshKeys = lib.filter (key: key != "") (lib.splitString "\n" sshPublicKeys);
-in
 {
+  # Note: SSH keys are now handled by cloud-init from cloud metadata
+
   # Basic system configuration
   system.stateVersion = "24.11";
 
@@ -53,11 +48,22 @@ in
     };
   };
 
+  # Cloud-init for SSH key injection from cloud providers
+  services.cloud-init = {
+    enable = true;
+    # DigitalOcean uses the NoCloud datasource via metadata service
+    # The datasource should auto-detect, but we can help it
+    settings = {
+      datasource_list = [ "NoCloud" "DigitalOcean" "ConfigDrive" ];
+    };
+  };
+
   # Security hardening
   security.sudo.wheelNeedsPassword = false;
   
-  # Users - SSH keys from environment variable or cloud-init
-  users.users.root.openssh.authorizedKeys.keys = sshKeys;
+  # Note: SSH keys will be injected by cloud-init from cloud metadata
+  # Remove the build-time SSH key injection
+  users.users.root.openssh.authorizedKeys.keys = [];
 
   # Firewall - minimal defaults, can be extended by runtime config
   networking.firewall = {
