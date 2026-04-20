@@ -69,4 +69,15 @@
   # 
   # This is handled by the digitalocean-ssh-keys systemd service which reads
   # SSH keys from DigitalOcean metadata service at 169.254.169.254
+  
+  # Swapfile configuration
+  # Creates a 1GB swapfile at /swapfile
+  # To change the size, modify the 'size' value below (in megabytes)
+  # To disable swap, remove or comment out this section
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 1024; # Size in MB (1024 = 1GB)
+    }
+  ];
 }

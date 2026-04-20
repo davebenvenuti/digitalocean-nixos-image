@@ -113,6 +113,24 @@ The base NixOS configuration is in `configuration.nix`. This is a general-purpos
 - **Web server**: Caddy for reverse proxy (not configured by default)
 - **System maintenance**: Automatic weekly garbage collection
 - **Security hardening**: Firewall with SSH only, sudo without password for wheel group
+- **Swapfile**: 1GB swapfile at `/swapfile` (configurable in `configuration.nix`)
+
+### Customizing Swapfile Configuration
+
+The default configuration includes a 1GB swapfile. To customize:
+
+1. **Change swapfile size**: Edit `configuration.nix` and modify the `size` value in the `swapDevices` section (value is in megabytes).
+2. **Disable swapfile**: Comment out or remove the entire `swapDevices` section in `configuration.nix`.
+
+Example: Change to 2GB swapfile:
+```nix
+swapDevices = [
+  {
+    device = "/swapfile";
+    size = 2048; # 2048 MB = 2GB
+  }
+];
+```
 
 ## Usage Examples
 
