@@ -36,7 +36,7 @@ A self-contained Nix flake for building and uploading general-purpose NixOS base
 
 5. **Upload using rclone:**
    ```bash
-   ./scripts/upload-nixos-image.sh
+   ./scripts/upload-nixos-image.sh nixos-base-$(date +%Y%m%d)
    ```
 
 ## Core Workflow
@@ -68,7 +68,7 @@ Configure your storage remote (DigitalOcean Spaces, S3, etc.):
 Upload the built image using rclone:
 
 ```bash
-./scripts/upload-nixos-image.sh
+./scripts/upload-nixos-image.sh nixos-base-$(date +%Y%m%d)
 ```
 
 ## Configuration
@@ -84,9 +84,6 @@ DIGITALOCEAN_TOKEN="your_digitalocean_api_token_here"
 # Required for rclone upload: Remote configuration
 RCLONE_PATH="digitaloceanimages:digital-ocean-images"  # remote:bucket/path format
 # Remote name is fixed as "digitaloceanimages" (no hyphens for env var compatibility)
-
-# Optional: Custom image name
-# NIXOS_IMAGE_NAME="nixos-base-custom"
 
 # Optional: Image description
 # IMAGE_DESCRIPTION="NixOS base image built on $(date)"
@@ -147,7 +144,7 @@ nix build .#digitalocean-image
 
 # Build and upload
 nix build .#digitalocean-image
-./scripts/upload-nixos-image.sh
+./scripts/upload-nixos-image.sh nixos-base-$(date +%Y%m%d)
 ```
 
 ### Upload to AWS S3 (via rclone)
@@ -158,12 +155,14 @@ rclone config
 
 # Build and upload
 nix build .#digitalocean-image
-./scripts/upload-nixos-image.sh
+./scripts/upload-nixos-image.sh nixos-base-$(date +%Y%m%d)
 ```
 
 ## Scripts
 
 - `scripts/upload-nixos-image.sh` - Main upload script (supports rclone to any remote)
+  - **Usage**: `./scripts/upload-nixos-image.sh [image-name]`
+  - If no image name is provided, generates one: `nixos-base-YYYYMMDD-HHMMSS`
   - Automatically finds the newest DigitalOcean image (`*.qcow2.gz`) in `result/` directory
   - Can be overridden with `NIXOS_IMAGE_PATH` environment variable
   - Only uploads DigitalOcean images
@@ -308,7 +307,7 @@ df -h
 ### Upload Script Issues
 ```bash
 # Run with debug output
-bash -x ./scripts/upload-nixos-image.sh
+bash -x ./scripts/upload-nixos-image.sh nixos-base-test
 
 # Check environment variables
 env | grep -E "(DIGITALOCEAN|RCLONE|NIXOS)"

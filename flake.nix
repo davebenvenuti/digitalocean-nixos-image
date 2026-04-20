@@ -52,7 +52,7 @@
         echo ""
         echo "Available commands:"
         echo "  nix build .#digitalocean-image   - Build DigitalOcean image"
-        echo "  ./scripts/upload-nixos-image.sh  - Upload image to DigitalOcean"
+        echo "  ./scripts/upload-nixos-image.sh [image-name]  - Upload image to DigitalOcean"
         echo ""
         echo "Images will be available at:"
         echo "  DigitalOcean: result/nixos-image-digital-ocean-*.qcow2.gz"

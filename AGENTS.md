@@ -71,7 +71,7 @@ direnv allow
 nix build .#digitalocean-image
 
 # Upload image
-./scripts/upload-nixos-image.sh
+./scripts/upload-nixos-image.sh [image-name]
 ```
 
 ## For LLM Agents

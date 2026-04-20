@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Upload NixOS image to DigitalOcean via rclone
+# Usage: ./upload-nixos-image.sh [image-name]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -16,11 +17,18 @@ fi
 
 source "$SCRIPT_DIR/lib.sh"
 
+# Check for optional argument
+if [ $# -ge 1 ]; then
+    IMAGE_NAME="$1"
+else
+    # Generate default image name with timestamp
+    IMAGE_NAME="nixos-base-$(date +%Y%m%d-%H%M%S)"
+    echo "⚠️  No image name provided. Using generated name: $IMAGE_NAME"
+    echo ""
+fi
+
 # Rclone configuration
 RCLONE_REMOTE="digitaloceanimages"  # Fixed remote name (no hyphens for env var compatibility)
-
-echo "=== Uploading NixOS Image to DigitalOcean ==="
-echo ""
 
 # Simple validation - assumes environment variables are set
 test "${DIGITALOCEAN_TOKEN:-}" || log_and_exit "DIGITALOCEAN_TOKEN not set. Ensure .env is set up (see .env.example for guidance)."
@@ -76,7 +84,6 @@ echo ""
 
 # Set default values
 REGION="${REGION:-nyc3}"
-IMAGE_NAME="${NIXOS_IMAGE_NAME:-nixos-base-$(date +%Y%m%d-%H%M%S)}"
 IMAGE_DESCRIPTION="NixOS base image built on $(date)"
 
 # Check if image already exists
@@ -89,20 +96,7 @@ if [ -n "$EXISTING_IMAGE" ]; then
     echo "✅ Image '$IMAGE_NAME' already exists (ID: $EXISTING_IMAGE)"
     echo ""
 
-    # Update .env with the existing image name
-    if [ -f ".env" ]; then
-        if grep -q "^NIXOS_IMAGE_NAME=" .env; then
-            # Update existing line
-            sed -i "s/^NIXOS_IMAGE_NAME=.*/NIXOS_IMAGE_NAME=\"$IMAGE_NAME\"/" .env
-        else
-            # Add new line
-            echo "NIXOS_IMAGE_NAME=\"$IMAGE_NAME\"" >> .env
-        fi
-        echo "✓ .env file updated with existing image name"
-    else
-        echo "⚠️  .env file not found. Please add:"
-        echo "  NIXOS_IMAGE_NAME=\"$IMAGE_NAME\""
-    fi
+    echo "✓ Image '$IMAGE_NAME' already exists (ID: $EXISTING_IMAGE)"
 
     echo ""
     echo "You can use this existing image for deployment."
@@ -121,7 +115,8 @@ if [ -n "$EXISTING_IMAGE" ]; then
     echo "If you want to rebuild and upload a new image:"
     echo "1. Delete the existing image first:"
     echo "   doctl compute image delete $EXISTING_IMAGE --force"
-    echo "2. Run: nix build .#digitalocean-image && ./scripts/upload-nixos-image.sh"
+    echo "2. Run: nix build .#digitalocean-image && ./scripts/upload-nixos-image.sh [image-name]"
+    echo "   (image name is optional - will be generated if not provided)"
     echo ""
     exit 0
 fi
@@ -315,19 +310,7 @@ if [ $? -eq 0 ]; then
     fi
     echo ""
 
-    # Update .env file with image name (for future checks)
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        # Update image name
-        if grep -q "^NIXOS_IMAGE_NAME=" "$PROJECT_ROOT/.env"; then
-            sed -i "s|^NIXOS_IMAGE_NAME=.*|NIXOS_IMAGE_NAME=\"$IMAGE_NAME\"|" "$PROJECT_ROOT/.env"
-        else
-            echo "NIXOS_IMAGE_NAME=\"$IMAGE_NAME\"" >> "$PROJECT_ROOT/.env"
-        fi
-        echo "✅ .env file updated with image name"
-    else
-        echo "⚠️  .env file not found. Please add to your .env:"
-        echo "  NIXOS_IMAGE_NAME=\"$IMAGE_NAME\""
-    fi
+    echo "✅ Image '$IMAGE_NAME' created successfully!"
 
     echo ""
     echo "Next steps:"
