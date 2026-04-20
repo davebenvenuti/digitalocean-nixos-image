@@ -62,14 +62,14 @@
   # - Kernel parameters optimized for DigitalOcean
   # - Metadata service integration (digitalocean-metadata service)
   # - Firewall configuration
-  
+
   # Following blog post: https://justinas.org/nixos-in-the-cloud-step-by-step-part-1
-  # "The custom image we just generated has a hidden superpower: it automatically 
+  # "The custom image we just generated has a hidden superpower: it automatically
   # pulls in the public SSH keys from your DigitalOcean account at creation time."
-  # 
+  #
   # This is handled by the digitalocean-ssh-keys systemd service which reads
   # SSH keys from DigitalOcean metadata service at 169.254.169.254
-  
+
   # Swapfile configuration
   # Creates a 1GB swapfile at /swapfile
   # To change the size, modify the 'size' value below (in megabytes)
@@ -77,7 +77,7 @@
   swapDevices = [
     {
       device = "/swapfile";
-      size = 1024; # Size in MB (1024 = 1GB)
+      size = 4096; # Size in MB (1024 = 1GB)
     }
   ];
 }
